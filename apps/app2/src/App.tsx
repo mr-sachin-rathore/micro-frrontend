@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Fetch settings from BFF on mount
@@ -63,9 +64,11 @@ const App: React.FC = () => {
         
         // Clear status after 3 seconds
         setTimeout(() => setApiStatus(''), 3000);
-      } catch (error) {
-        console.error('[app2/App] ❌ Failed to fetch settings:', error);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+        console.error('[app2/App] ❌ Failed to fetch settings:', err);
         setApiStatus('❌ Failed to load settings from BFF');
+        setError(`Failed to load settings: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -100,6 +103,27 @@ const App: React.FC = () => {
             : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
         }`}>
           {apiStatus}
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error Loading Settings</h3>
+              <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-sm text-red-700 dark:text-red-300 underline hover:no-underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
@@ -164,20 +188,20 @@ const App: React.FC = () => {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">ID:</span>
-                    <span className="text-gray-900 dark:text-white font-mono text-xs">{user.id || 'N/A'}</span>
+                    <span className="text-gray-900 dark:text-white font-mono text-xs">{user?.id || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Name:</span>
-                    <span className="text-gray-900 dark:text-white">{user.name}</span>
+                    <span className="text-gray-900 dark:text-white">{user?.name ?? 'Guest'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                    <span className="text-gray-900 dark:text-white">{user.email}</span>
+                    <span className="text-gray-900 dark:text-white">{user?.email || 'No email'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Role:</span>
                     <span className="px-2 py-0.5 text-xs rounded-full bg-accent-100 dark:bg-accent-900 text-accent-700 dark:text-accent-300 capitalize">
-                      {user.role}
+                      {user?.role ?? 'guest'}
                     </span>
                   </div>
                 </div>

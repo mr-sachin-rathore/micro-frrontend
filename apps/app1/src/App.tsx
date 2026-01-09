@@ -42,6 +42,7 @@ const App: React.FC = () => {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Fetch dashboard data from BFF on mount
@@ -68,9 +69,15 @@ const App: React.FC = () => {
 
         // Clear status after 3 seconds
         setTimeout(() => setApiStatus(""), 3000);
-      } catch (error) {
-        console.error("[app1/App] ❌ Failed to fetch dashboard data:", error);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error occurred";
+        console.error("[app1/App] ❌ Failed to fetch dashboard data:", err);
         setApiStatus("❌ Failed to load data from BFF");
+        setError(`Failed to load dashboard data: ${errorMessage}`);
+        // Initialize with empty/default values on error
+        setStats(null);
+        setActivity([]);
       } finally {
         setIsLoading(false);
       }
@@ -155,6 +162,41 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-red-500 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                Error Loading Data
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                {error}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-sm text-red-700 dark:text-red-300 underline hover:no-underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -163,7 +205,7 @@ const App: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-300">
           Welcome back,{" "}
           <span className="font-medium text-primary-600 dark:text-primary-400">
-            {user.name}
+            {user?.name ?? "Guest"}
           </span>
           !
           {stats && (
@@ -270,7 +312,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Activity Feed from BFF */}
-      {activity.length > 0 && (
+      {Array.isArray(activity) && activity.length > 0 && (
         <div className="mb-8 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <svg
@@ -379,7 +421,7 @@ const App: React.FC = () => {
             </span>
           </button>
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-            Current: {user.name} ({user.email})
+            Current: {user?.name ?? "Guest"} ({user?.email ?? "No email"})
           </p>
         </div>
 
@@ -412,7 +454,7 @@ const App: React.FC = () => {
                 flex-1 px-4 py-3 rounded-xl font-medium
                 transition-all duration-200
                 ${
-                  user.role === "admin"
+                  user?.role === "admin"
                     ? "bg-accent-500 text-white shadow-lg shadow-accent-500/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }
@@ -426,7 +468,7 @@ const App: React.FC = () => {
                 flex-1 px-4 py-3 rounded-xl font-medium
                 transition-all duration-200
                 ${
-                  user.role === "user"
+                  user?.role === "user"
                     ? "bg-accent-500 text-white shadow-lg shadow-accent-500/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }
@@ -437,7 +479,9 @@ const App: React.FC = () => {
           </div>
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center">
             Current role:{" "}
-            <span className="font-medium capitalize">{user.role}</span>
+            <span className="font-medium capitalize">
+              {user?.role ?? "guest"}
+            </span>
           </p>
         </div>
       </div>

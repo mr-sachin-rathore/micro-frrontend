@@ -112,7 +112,7 @@ const App: React.FC = () => {
       }
     };
 
-    if (!user.isAuthenticated) {
+    if (!user?.isAuthenticated) {
       fetchUserFromBFF();
     } else {
       setIsLoading(false);
@@ -124,13 +124,13 @@ const App: React.FC = () => {
    * This enables Tailwind's dark mode to work correctly
    */
   useEffect(() => {
-    if (theme.mode === 'dark') {
+    if (theme?.mode === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    console.log('[shell/App] 🎨 Theme applied:', theme.mode);
-  }, [theme.mode]);
+    console.log('[shell/App] 🎨 Theme applied:', theme?.mode ?? 'light');
+  }, [theme?.mode]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">

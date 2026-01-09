@@ -76,8 +76,8 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
         {/* Breadcrumbs */}
         <nav className="hidden md:flex items-center gap-2 text-sm">
-          {navigation.breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.path}>
+          {Array.isArray(navigation?.breadcrumbs) && navigation.breadcrumbs.map((crumb, index) => (
+            <React.Fragment key={crumb?.path ?? index}>
               {index > 0 && (
                 <span className="text-gray-400 dark:text-gray-500">/</span>
               )}
@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                   }
                 `}
               >
-                {crumb.label}
+                {crumb?.label ?? ''}
               </span>
             </React.Fragment>
           ))}
@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         <div className="hidden sm:flex items-center gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">Current:</span>
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
-            {navigation.currentApp}
+            {navigation?.currentApp ?? 'shell'}
           </span>
         </div>
 
@@ -118,9 +118,9 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
             transition-colors duration-200
             focus:outline-none focus:ring-2 focus:ring-primary-500
           "
-          title={`Switch to ${theme.mode === 'light' ? 'dark' : 'light'} mode`}
+          title={`Switch to ${theme?.mode === 'light' ? 'dark' : 'light'} mode`}
         >
-          {theme.mode === 'light' ? (
+          {theme?.mode === 'light' ? (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -143,19 +143,19 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
         {/* User Profile */}
         <div className="flex items-center gap-3">
-          {user.isAuthenticated ? (
+          {user?.isAuthenticated ? (
             <>
               {/* Avatar */}
               <div className="relative">
-                {user.avatar ? (
+                {user?.avatar ? (
                   <img
                     src={user.avatar}
-                    alt={user.name}
+                    alt={user?.name ?? 'User'}
                     className="w-9 h-9 rounded-full border-2 border-primary-500"
                   />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white font-medium text-sm">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user?.name ?? 'G').charAt(0).toUpperCase()}
                   </div>
                 )}
                 {/* Online indicator */}
@@ -165,10 +165,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               {/* User Info */}
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {user.name}
+                  {user?.name ?? 'Guest'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                  {user.role}
+                  {user?.role ?? 'guest'}
                 </p>
               </div>
 

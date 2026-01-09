@@ -42,6 +42,18 @@ const STORAGE_KEYS = {
 // ============================================================================
 
 /**
+ * Default user state for fallback
+ */
+const defaultUserState: User = {
+  id: '',
+  name: 'Guest User',
+  email: '',
+  role: 'guest',
+  isAuthenticated: false,
+  avatar: undefined,
+};
+
+/**
  * Load persisted state from localStorage
  * Called once when the store is created
  */
@@ -56,10 +68,21 @@ const loadPersistedState = (): {
 
     const persistedState: { user?: User; theme?: ThemeState } = {};
 
-    // Load user state
+    // Load user state with validation
     const userState = localStorage.getItem(STORAGE_KEYS.USER);
     if (userState) {
-      persistedState.user = JSON.parse(userState);
+      const parsed = JSON.parse(userState);
+      // Ensure all required fields exist, merge with defaults
+      persistedState.user = {
+        ...defaultUserState,
+        ...parsed,
+        // Ensure critical fields are never undefined
+        id: parsed?.id ?? '',
+        name: parsed?.name ?? 'Guest User',
+        email: parsed?.email ?? '',
+        role: parsed?.role ?? 'guest',
+        isAuthenticated: parsed?.isAuthenticated ?? false,
+      };
       console.log('[shared-store] 📂 Loaded user state from localStorage');
     }
 
@@ -73,6 +96,9 @@ const loadPersistedState = (): {
     return persistedState;
   } catch (error) {
     console.error('[shared-store] ❌ Error loading persisted state:', error);
+    // Clear corrupted localStorage
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.THEME);
     return {};
   }
 };

@@ -66,6 +66,7 @@ export default defineConfig({
       '@shared/types': path.resolve(__dirname, '../../libs/shared-types/src/index.ts'),
       '@shared/store': path.resolve(__dirname, '../../libs/shared-store/src/index.ts'),
       '@shared/ui': path.resolve(__dirname, '../../libs/shared-ui/src/index.ts'),
+      '@shared/api-client': path.resolve(__dirname, '../../libs/shared-api-client/src/index.ts'),
     },
   },
   // Development server configuration

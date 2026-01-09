@@ -3,23 +3,19 @@
  *
  * Provides base URLs for API calls based on environment.
  *
- * DEVELOPMENT:
- * - Frontend runs on Vite dev server (5173, 5174, 5175)
+ * DEVELOPMENT / LOCAL PREVIEW:
+ * - Frontend runs on Vite dev/preview server (5173, 5174, 5175)
  * - BFF servers run separately (8084, 8085, 8086)
  * - API calls go to different ports
  *
- * PRODUCTION:
+ * PRODUCTION (Docker):
  * - Frontend is served by BFF server
  * - API calls go to same origin (relative URLs)
  */
 
-// Detect environment
-const isDevelopment =
-  typeof import.meta !== "undefined" && import.meta.env?.MODE === "development";
-
 // API base URLs for each environment
 export const API_CONFIG = {
-  development: {
+  local: {
     shell: "http://localhost:8084",
     app1: "http://localhost:8085",
     app2: "http://localhost:8086",
@@ -32,13 +28,36 @@ export const API_CONFIG = {
 };
 
 /**
+ * Detect if we're running locally (dev mode or preview mode on localhost)
+ */
+function isLocalEnvironment(): boolean {
+  // Check if we're in the browser
+  if (typeof window === "undefined") {
+    return true; // SSR or Node - assume local
+  }
+
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+
+  // Running on localhost with Vite dev/preview ports
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    const vitePorts = ["5173", "5174", "5175"];
+    if (vitePorts.includes(port)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get the API base URL for a specific app
  *
  * @param app - The app to get the base URL for
  * @returns The base URL string
  */
 export function getApiBaseUrl(app: "shell" | "app1" | "app2"): string {
-  const config = isDevelopment ? API_CONFIG.development : API_CONFIG.production;
+  const config = isLocalEnvironment() ? API_CONFIG.local : API_CONFIG.production;
 
   return config[app];
 }
@@ -47,12 +66,12 @@ export function getApiBaseUrl(app: "shell" | "app1" | "app2"): string {
  * Get all API base URLs
  */
 export function getAllApiUrls() {
-  return isDevelopment ? API_CONFIG.development : API_CONFIG.production;
+  return isLocalEnvironment() ? API_CONFIG.local : API_CONFIG.production;
 }
 
 /**
- * Check if running in development mode
+ * Check if running in local/development mode
  */
 export function isDevMode(): boolean {
-  return isDevelopment;
+  return isLocalEnvironment();
 }
