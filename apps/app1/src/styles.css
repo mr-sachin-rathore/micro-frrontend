@@ -1,0 +1,24 @@
+/**
+ * App1 Styles (for standalone development)
+ * 
+ * When loaded via Module Federation, the Shell's styles are used.
+ * This file is only needed for standalone development of App1.
+ */
+
+/* Import Google Fonts - must come before @tailwind directives */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white;
+  }
+}
+

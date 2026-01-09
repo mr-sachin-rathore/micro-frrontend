@@ -1,0 +1,60 @@
+{
+  "name": "micro-frontend-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NX Monorepo with Vite Module Federation - Micro Frontend Architecture",
+  "scripts": {
+    "dev": "npm run build:all && npm run preview:all",
+    "preview:all": "concurrently \"npm run preview:app1\" \"npm run preview:app2\" \"npm run preview:shell\"",
+    "dev:shell": "nx serve shell",
+    "dev:app1": "nx serve app1",
+    "dev:app2": "nx serve app2",
+    "preview:shell": "nx preview shell",
+    "preview:app1": "nx preview app1",
+    "preview:app2": "nx preview app2",
+    "build:remotes": "nx run-many --target=build --projects=app1,app2 --parallel=2",
+    "build:all": "nx run-many --target=build --projects=app1,app2,shell",
+    "build:shell": "nx build shell",
+    "build:app1": "nx build app1",
+    "build:app2": "nx build app2",
+    "lint": "nx run-many --target=lint --all",
+    "test": "nx run-many --target=test --all",
+    "clean": "nx reset && rm -rf node_modules dist"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "@reduxjs/toolkit": "^2.0.1",
+    "react-redux": "^9.0.4"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@nx/devkit": "^17.2.0",
+    "@nx/eslint-plugin": "^17.2.0",
+    "@nx/js": "^17.2.0",
+    "@nx/react": "^17.2.0",
+    "@nx/vite": "^17.2.0",
+    "@nx/workspace": "^17.2.0",
+    "@originjs/vite-plugin-federation": "^1.3.5",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "nx": "^17.2.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

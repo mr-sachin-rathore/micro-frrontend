@@ -1,0 +1,64 @@
+{
+  "name": "shell",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/shell/src",
+  "projectType": "application",
+  "tags": ["scope:app", "type:host"],
+  "targets": {
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "shell:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "shell:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "shell:build:production"
+        }
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/shell"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "production",
+      "options": {
+        "buildTarget": "shell:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "shell:build:development"
+        },
+        "production": {
+          "buildTarget": "shell:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/shell/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
+}
+

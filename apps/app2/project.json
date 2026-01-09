@@ -1,0 +1,64 @@
+{
+  "name": "app2",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/app2/src",
+  "projectType": "application",
+  "tags": ["scope:app", "type:remote"],
+  "targets": {
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "app2:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "app2:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "app2:build:production"
+        }
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/app2"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "production",
+      "options": {
+        "buildTarget": "app2:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "app2:build:development"
+        },
+        "production": {
+          "buildTarget": "app2:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/app2/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
+}
+
