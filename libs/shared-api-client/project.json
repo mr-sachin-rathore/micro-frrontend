@@ -1,0 +1,17 @@
+{
+  "name": "shared-api-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared-api-client/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:api-client"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/shared-api-client/**/*.{ts,tsx}"]
+      }
+    }
+  }
+}
+

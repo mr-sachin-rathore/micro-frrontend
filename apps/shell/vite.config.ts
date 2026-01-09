@@ -4,8 +4,8 @@
  * This is the HOST application that loads remote micro-frontends.
  * 
  * Module Federation Setup:
- * - This app runs on port 3000
- * - It imports App1 from port 3001 and App2 from port 3002
+ * - This app runs on port 5173
+ * - It imports App1 from port 5174 and App2 from port 5175
  * - Shared dependencies (React, Redux) are configured as singletons
  *   to ensure all apps share the same instance
  * 
@@ -35,9 +35,9 @@ export default defineConfig({
       // Remote applications that this host will load
       remotes: {
         // App1 - Dashboard application
-        app1: 'http://localhost:3001/assets/remoteEntry.js',
+        app1: 'http://localhost:5174/assets/remoteEntry.js',
         // App2 - Settings application
-        app2: 'http://localhost:3002/assets/remoteEntry.js',
+        app2: 'http://localhost:5175/assets/remoteEntry.js',
       },
       // Shared dependencies - CRITICAL for state sharing!
       // All dependencies listed here will be shared across host and remotes
@@ -75,7 +75,7 @@ export default defineConfig({
   },
   // Development server configuration
   server: {
-    port: 3000,
+    port: 5173,
     strictPort: true,
     cors: true,
     headers: {
@@ -86,7 +86,7 @@ export default defineConfig({
   },
   // Preview server configuration (for production builds)
   preview: {
-    port: 3000,
+    port: 5173,
     strictPort: true,
     cors: true,
   },

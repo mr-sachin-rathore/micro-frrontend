@@ -1,0 +1,29 @@
+{
+  "name": "shell-server",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/shell/server/src",
+  "projectType": "application",
+  "tags": ["scope:app", "type:bff", "app:shell"],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/shell/server && npm run dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/shell/server && npm run build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/shell/server && npm install"
+      }
+    }
+  }
+}
+

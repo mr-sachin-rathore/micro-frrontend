@@ -1,0 +1,105 @@
+# =============================================================================
+# App2 BFF Server (Settings) - Multi-stage Dockerfile
+# =============================================================================
+# This Dockerfile handles the complete build process:
+# 1. Build React frontend app
+# 2. Build Node.js BFF server
+# 3. Copy frontend bundle to server's public folder
+# 4. Create optimized production image
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Frontend Build (React + Vite)
+# -----------------------------------------------------------------------------
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files for root (for shared libs dependencies)
+COPY package*.json ./
+COPY nx.json ./
+COPY tsconfig.base.json ./
+
+# Copy shared libraries (needed for frontend build)
+COPY libs/ ./libs/
+
+# Copy app2 frontend app
+COPY apps/app2/src ./apps/app2/src
+COPY apps/app2/index.html ./apps/app2/
+COPY apps/app2/vite.config.ts ./apps/app2/
+COPY apps/app2/project.json ./apps/app2/
+COPY apps/app2/tsconfig*.json ./apps/app2/
+
+# Install dependencies
+RUN npm ci
+
+# Build the frontend app
+RUN npx nx build app2 --skip-nx-cache
+
+# Frontend build output is now in /app/dist/apps/app2
+
+# -----------------------------------------------------------------------------
+# Stage 2: Backend Build (Node.js + Express)
+# -----------------------------------------------------------------------------
+FROM node:18-alpine AS backend-builder
+
+WORKDIR /app
+
+# Copy server package files
+COPY apps/app2/server/package*.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci
+
+# Copy server source code
+COPY apps/app2/server/src ./src
+COPY apps/app2/server/tsconfig.json ./
+
+# Build TypeScript server
+RUN npm run build
+
+# Server build output is now in /app/dist
+
+# -----------------------------------------------------------------------------
+# Stage 3: Production Image
+# -----------------------------------------------------------------------------
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy server package files
+COPY apps/app2/server/package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built server from backend-builder
+COPY --from=backend-builder /app/dist ./dist
+
+# Copy built frontend from frontend-builder to public folder
+COPY --from=frontend-builder /app/dist/apps/app2 ./public
+
+# Set ownership
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=8086
+ENV SERVE_STATIC=true
+
+# Expose port
+EXPOSE 8086
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8086/health || exit 1
+
+# Start server
+CMD ["node", "dist/main.js"]

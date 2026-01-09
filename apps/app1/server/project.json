@@ -1,0 +1,28 @@
+{
+  "name": "app1-server",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/app1/server/src",
+  "projectType": "application",
+  "tags": ["scope:app", "type:bff", "app:app1"],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/app1/server && npm run dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/app1/server && npm run build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/app1/server && npm install"
+      }
+    }
+  }
+}

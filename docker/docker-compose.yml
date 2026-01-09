@@ -1,0 +1,132 @@
+# Docker Compose for Micro-Frontend Architecture
+#
+# This configuration runs all BFF servers in production mode.
+# Each server serves both static frontend files and API routes.
+#
+# Usage (from project root):
+#   npm run build:all                    # Build all frontend apps
+#   cd docker && docker-compose build    # Build Docker images
+#   cd docker && docker-compose up       # Start all services
+#
+# OR use the npm scripts:
+#   npm run docker:build
+#   npm run docker:up
+
+name: micro-frontend-app
+
+services:
+  # ============================================================================
+  # Shell BFF Server (Host Application)
+  # ============================================================================
+  shell:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.shell
+    container_name: mf-shell-bff
+    ports:
+      - "8084:8084"
+    environment:
+      - NODE_ENV=production
+      - PORT=8084
+      - SERVE_STATIC=true
+      # Remote URLs must be accessible from BROWSER (not Docker network)
+      - APP1_REMOTE_URL=http://localhost:8085/assets/remoteEntry.js
+      - APP2_REMOTE_URL=http://localhost:8086/assets/remoteEntry.js
+      - BACKEND_API_URL=http://backend-api:5000
+    depends_on:
+      - app1
+      - app2
+    networks:
+      - microfrontend-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================================================
+  # App1 BFF Server (Dashboard Application)
+  # ============================================================================
+  app1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app1
+    container_name: mf-app1-bff
+    ports:
+      - "8085:8085"
+    environment:
+      - NODE_ENV=production
+      - PORT=8085
+      - SERVE_STATIC=true
+      - BACKEND_API_URL=http://backend-api:5000
+    networks:
+      - microfrontend-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================================================
+  # App2 BFF Server (Settings Application)
+  # ============================================================================
+  app2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app2
+    container_name: mf-app2-bff
+    ports:
+      - "8086:8086"
+    environment:
+      - NODE_ENV=production
+      - PORT=8086
+      - SERVE_STATIC=true
+      - BACKEND_API_URL=http://backend-api:5000
+    networks:
+      - microfrontend-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================================================
+  # Nginx Reverse Proxy (Optional - for production routing)
+  # ============================================================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: nginx-proxy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - shell
+  #     - app1
+  #     - app2
+  #   networks:
+  #     - microfrontend-network
+  #   restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  microfrontend-network:
+    driver: bridge
+    name: microfrontend-network
+
+# ============================================================================
+# Volumes (for development/debugging)
+# ============================================================================
+# volumes:
+#   shell-data:
+#   app1-data:
+#   app2-data:

@@ -20,10 +20,11 @@
  * - Shared Header and LeftNavigation from @shared/ui
  */
 
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Header, LeftNavigation } from '@shared/ui';
-import { useAppDispatch, useAppSelector, setUser, loginUser } from '@shared/store';
+import { useAppDispatch, useAppSelector, setUser } from '@shared/store';
+import { authApi } from '@shared/api-client';
 import RemoteAppErrorBoundary from './components/RemoteAppErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import WelcomePage from './components/WelcomePage';
@@ -62,27 +63,59 @@ const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user);
   const theme = useAppSelector((state) => state.theme);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiStatus, setApiStatus] = useState<string>('');
 
   /**
-   * Initialize the app with a demo user
-   * In a real app, this would check for existing session/token
+   * Fetch user data from BFF on mount
+   * This demonstrates real API integration with the BFF server
    */
   useEffect(() => {
-    console.log('[shell/App] 🎬 Shell app mounted');
-    
-    // Auto-login demo user if not authenticated
+    const fetchUserFromBFF = async () => {
+      console.log('[shell/App] 🎬 Shell app mounted');
+      console.log('[shell/App] 🌐 Fetching user from BFF...');
+      setApiStatus('Connecting to Shell BFF...');
+      
+      try {
+        // Fetch current user from BFF
+        const userData = await authApi.getCurrentUser();
+        console.log('[shell/App] ✅ User data received from BFF:', userData);
+        setApiStatus('✅ User loaded from BFF');
+        
+        dispatch(
+          setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            isAuthenticated: userData.isAuthenticated,
+            avatar: userData.avatar,
+          })
+        );
+      } catch (error) {
+        console.error('[shell/App] ❌ Failed to fetch user from BFF:', error);
+        setApiStatus('❌ BFF connection failed, using fallback');
+        
+        // Fallback to demo user if BFF is not available
+        dispatch(
+          setUser({
+            id: 'demo-user-1',
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+            role: 'admin',
+            isAuthenticated: true,
+            avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=0ea5e9&color=fff',
+          })
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (!user.isAuthenticated) {
-      console.log('[shell/App] 👤 Setting up demo user...');
-      dispatch(
-        setUser({
-          id: 'demo-user-1',
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          role: 'admin',
-          isAuthenticated: true,
-          avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=0ea5e9&color=fff',
-        })
-      );
+      fetchUserFromBFF();
+    } else {
+      setIsLoading(false);
     }
   }, [dispatch, user.isAuthenticated]);
 
@@ -101,6 +134,19 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+      {/* API Status Indicator */}
+      {apiStatus && (
+        <div className={`fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg transition-all ${
+          apiStatus.includes('✅') 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+            : apiStatus.includes('❌')
+            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+        }`}>
+          {apiStatus}
+        </div>
+      )}
+      
       {/* Shared Header */}
       <Header />
       

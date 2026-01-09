@@ -19,12 +19,14 @@
  * This demonstrates real-time cross-app state synchronization.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   useAppSelector,
   useAppDispatch,
   navigateTo,
+  setTheme,
 } from '@shared/store';
+import { settingsApi, type UserSettings } from '@shared/api-client';
 import SettingsForm from './components/SettingsForm';
 import ThemeSelector from './components/ThemeSelector';
 
@@ -32,12 +34,44 @@ const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user);
   const theme = useAppSelector((state) => state.theme);
+  
+  // State for API data
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiStatus, setApiStatus] = useState<string>('');
 
   /**
-   * Update navigation state when this app mounts
+   * Fetch settings from BFF on mount
    */
   useEffect(() => {
-    console.log('[app2/App] 🚀 Settings app mounted');
+    const fetchSettings = async () => {
+      console.log('[app2/App] 🚀 Settings app mounted');
+      console.log('[app2/App] 🌐 Fetching settings from App2 BFF...');
+      setApiStatus('Loading settings...');
+      
+      try {
+        const userSettings = await settingsApi.getUserSettings();
+        console.log('[app2/App] ✅ Settings received:', userSettings);
+        
+        setSettings(userSettings);
+        setApiStatus('✅ Settings loaded from App2 BFF');
+        
+        // Sync theme from BFF to Redux
+        if (userSettings.theme !== theme.mode) {
+          dispatch(setTheme(userSettings.theme));
+        }
+        
+        // Clear status after 3 seconds
+        setTimeout(() => setApiStatus(''), 3000);
+      } catch (error) {
+        console.error('[app2/App] ❌ Failed to fetch settings:', error);
+        setApiStatus('❌ Failed to load settings from BFF');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
     
     dispatch(
       navigateTo({
@@ -56,6 +90,19 @@ const App: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
+      {/* API Status Indicator */}
+      {apiStatus && (
+        <div className={`fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${
+          apiStatus.includes('✅') 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+            : apiStatus.includes('❌')
+            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+        }`}>
+          {apiStatus}
+        </div>
+      )}
+      
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -63,9 +110,31 @@ const App: React.FC = () => {
         </h1>
         <p className="text-gray-600 dark:text-gray-300">
           Manage your account settings and preferences.
-          This is App2 (Remote Micro-Frontend on port 3002).
+          {settings && <span className="ml-2 text-sm text-gray-500">(Last updated: {new Date(settings.updatedAt).toLocaleString()})</span>}
         </p>
       </div>
+      
+      {/* Settings from BFF */}
+      {settings && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-gray-900 dark:text-white text-sm">Settings loaded from App2 BFF</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Language: {settings.language} | Timezone: {settings.timezone} | Notifications: {
+                  [settings.notifications.email && 'Email', settings.notifications.push && 'Push', settings.notifications.sms && 'SMS']
+                    .filter(Boolean).join(', ') || 'None'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content - Settings Form */}

@@ -4,7 +4,7 @@
  * This is a REMOTE application that exposes components to the shell host.
  * 
  * Module Federation Setup:
- * - This app runs on port 3001
+ * - This app runs on port 5174
  * - It exposes the './App' component for the shell to import
  * - Shared dependencies are configured as singletons to match the host
  * 
@@ -70,7 +70,7 @@ export default defineConfig({
   },
   // Development server configuration
   server: {
-    port: 3001,
+    port: 5174,
     strictPort: true,
     cors: true,
     headers: {
@@ -81,7 +81,7 @@ export default defineConfig({
   },
   // Preview server configuration
   preview: {
-    port: 3001,
+    port: 5174,
     strictPort: true,
     cors: true,
   },
