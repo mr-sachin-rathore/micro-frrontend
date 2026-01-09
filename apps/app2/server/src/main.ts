@@ -22,11 +22,31 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS configuration
+// CORS configuration - allow all local origins (dev, preview, Docker)
+const allowedOrigins = [
+  // Local development (Vite dev servers)
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  // Docker containers
+  'http://localhost:8084',
+  'http://localhost:8085',
+  'http://localhost:8086',
+  // Production domains
+  'https://app.example.com',
+];
+
 app.use(cors({
-  origin: config.nodeEnv === 'production'
-    ? ['https://app.example.com']
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (same-origin, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 

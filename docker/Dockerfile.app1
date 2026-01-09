@@ -1,11 +1,6 @@
+# syntax=docker/dockerfile:1.4
 # =============================================================================
-# App1 BFF Server (Dashboard) - Multi-stage Dockerfile
-# =============================================================================
-# This Dockerfile handles the complete build process:
-# 1. Build React frontend app
-# 2. Build Node.js BFF server
-# 3. Copy frontend bundle to server's public folder
-# 4. Create optimized production image
+# App1 BFF Server (Dashboard) - Multi-stage Dockerfile (Optimized)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -15,28 +10,27 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copy package files for root (for shared libs dependencies)
+# Copy package files FIRST for better caching
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
 
-# Copy shared libraries (needed for frontend build)
-COPY libs/ ./libs/
+# Install dependencies with unique cache ID to avoid conflicts
+RUN --mount=type=cache,id=app1-frontend-npm,target=/root/.npm \
+    npm ci
 
-# Copy app1 frontend app
+# Copy libs and app source
+COPY libs/ ./libs/
 COPY apps/app1/src ./apps/app1/src
 COPY apps/app1/index.html ./apps/app1/
 COPY apps/app1/vite.config.ts ./apps/app1/
 COPY apps/app1/project.json ./apps/app1/
 COPY apps/app1/tsconfig*.json ./apps/app1/
-
-# Install dependencies
-RUN npm ci
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
 
 # Build the frontend app
 RUN npx nx build app1 --skip-nx-cache
-
-# Frontend build output is now in /app/dist/apps/app1
 
 # -----------------------------------------------------------------------------
 # Stage 2: Backend Build (Node.js + Express)
@@ -48,8 +42,9 @@ WORKDIR /app
 # Copy server package files
 COPY apps/app1/server/package*.json ./
 
-# Install all dependencies (including dev for build)
-RUN npm ci
+# Install dependencies with unique cache ID
+RUN --mount=type=cache,id=app1-backend-npm,target=/root/.npm \
+    npm ci
 
 # Copy server source code
 COPY apps/app1/server/src ./src
@@ -57,8 +52,6 @@ COPY apps/app1/server/tsconfig.json ./
 
 # Build TypeScript server
 RUN npm run build
-
-# Server build output is now in /app/dist
 
 # -----------------------------------------------------------------------------
 # Stage 3: Production Image
@@ -69,13 +62,14 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nodejs -u 1001
+    adduser -S nodejs -u 1001
 
 # Copy server package files
 COPY apps/app1/server/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Install production dependencies with unique cache ID
+RUN --mount=type=cache,id=app1-prod-npm,target=/root/.npm \
+    npm ci --omit=dev
 
 # Copy built server from backend-builder
 COPY --from=backend-builder /app/dist ./dist
@@ -99,7 +93,7 @@ EXPOSE 8085
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8085/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8085/health || exit 1
 
 # Start server
 CMD ["node", "dist/main.js"]

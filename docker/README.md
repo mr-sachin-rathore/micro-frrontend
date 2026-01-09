@@ -4,13 +4,31 @@ This folder contains all Docker-related files for the micro-frontend monorepo.
 
 ## 📁 Files
 
-| File | Description |
-|------|-------------|
-| `docker-compose.yml` | Orchestrates all BFF containers |
-| `Dockerfile.shell` | Multi-stage build for Shell app |
-| `Dockerfile.app1` | Multi-stage build for App1 (Dashboard) |
-| `Dockerfile.app2` | Multi-stage build for App2 (Settings) |
-| `.dockerignore` | Files to exclude from build context |
+| File                 | Description                            |
+| -------------------- | -------------------------------------- |
+| `docker-compose.yml` | Orchestrates all BFF containers        |
+| `Dockerfile.shell`   | Multi-stage build for Shell app        |
+| `Dockerfile.app1`    | Multi-stage build for App1 (Dashboard) |
+| `Dockerfile.app2`    | Multi-stage build for App2 (Settings)  |
+| `.dockerignore`      | Files to exclude from build context    |
+
+## ⚡ Build Optimizations
+
+The Dockerfiles are optimized for **fast builds** using:
+
+| Optimization              | Benefit                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| **BuildKit cache mounts** | npm packages cached across builds (~70% faster rebuilds) |
+| **Parallel builds**       | All 3 apps build simultaneously                          |
+| **Layer caching**         | package.json copied first, source copied after           |
+| **--prefer-offline**      | Uses local npm cache when available                      |
+
+### First build vs Subsequent builds
+
+```
+First build:    ~3-5 minutes (downloads all dependencies)
+Subsequent:     ~30-60 seconds (uses cached dependencies)
+```
 
 ## 🏗️ Build Process
 
@@ -67,8 +85,8 @@ npm run docker:down
 ```bash
 cd docker
 
-# Build all images
-docker-compose build
+# Build all images (with BuildKit for caching)
+DOCKER_BUILDKIT=1 docker-compose build --parallel
 
 # Start in detached mode
 docker-compose up -d
@@ -80,13 +98,23 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### Using Make (recommended):
+
+```bash
+# Build with BuildKit optimizations
+make docker-build
+
+# Or build and start together
+make docker
+```
+
 ## 🌐 Access Points
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Shell | http://localhost:8084 | Main application |
-| App1 | http://localhost:8085 | Dashboard (direct access) |
-| App2 | http://localhost:8086 | Settings (direct access) |
+| Service | URL                   | Description               |
+| ------- | --------------------- | ------------------------- |
+| Shell   | http://localhost:8084 | Main application          |
+| App1    | http://localhost:8085 | Dashboard (direct access) |
+| App2    | http://localhost:8086 | Settings (direct access)  |
 
 ## 🔧 Build Individual Images
 
@@ -131,14 +159,14 @@ docker system prune -a
 
 Each container accepts these environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | 8084/8085/8086 | Server port |
-| `NODE_ENV` | production | Environment mode |
-| `SERVE_STATIC` | true | Serve frontend files |
-| `APP1_REMOTE_URL` | (shell only) | Module Fed URL for App1 |
-| `APP2_REMOTE_URL` | (shell only) | Module Fed URL for App2 |
-| `BACKEND_API_URL` | - | Main backend API URL |
+| Variable          | Default        | Description             |
+| ----------------- | -------------- | ----------------------- |
+| `PORT`            | 8084/8085/8086 | Server port             |
+| `NODE_ENV`        | production     | Environment mode        |
+| `SERVE_STATIC`    | true           | Serve frontend files    |
+| `APP1_REMOTE_URL` | (shell only)   | Module Fed URL for App1 |
+| `APP2_REMOTE_URL` | (shell only)   | Module Fed URL for App2 |
+| `BACKEND_API_URL` | -              | Main backend API URL    |
 
 ## 🔒 Security Features
 
@@ -150,13 +178,35 @@ Each container accepts these environment variables:
 
 ## 🐛 Troubleshooting
 
+### Build is still slow?
+
+```bash
+# Ensure BuildKit is enabled
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
+# Verify cache is being used (look for "CACHED" in build output)
+make docker-build
+```
+
 ### Build fails with "npm ci" error
+
 ```bash
 # Clear Docker cache and rebuild
-docker-compose build --no-cache
+make docker-build-nocache
+# Or:
+docker-compose -f docker/docker-compose.yml build --no-cache
+```
+
+### Clear npm cache in Docker
+
+```bash
+# Prune BuildKit cache
+docker builder prune --filter type=exec.cachemount
 ```
 
 ### Container exits immediately
+
 ```bash
 # Check logs for errors
 docker logs shell-bff
@@ -166,14 +216,15 @@ lsof -i :8084
 ```
 
 ### Frontend not loading
+
 ```bash
 # Verify static files exist in container
 docker exec -it shell-bff ls -la /app/public
 ```
 
 ### Health check failing
+
 ```bash
 # Check if server is running
 docker exec -it shell-bff wget -qO- http://localhost:8084/health
 ```
-

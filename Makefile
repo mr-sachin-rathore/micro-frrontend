@@ -342,27 +342,28 @@ preview-app2: ## Preview App2
 
 docker: docker-build docker-up ## Build and start Docker containers
 
-docker-build: ## Build all Docker images
-	@echo "$(CYAN)🐳 Building Docker images...$(NC)"
+docker-build: ## Build all Docker images (with BuildKit cache)
+	@echo "$(CYAN)🐳 Building Docker images with BuildKit...$(NC)"
 	@echo "$(YELLOW)This includes frontend + backend builds inside Docker$(NC)"
-	cd docker && docker-compose build
+	@echo "$(YELLOW)Using BuildKit cache for faster subsequent builds!$(NC)"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f docker/docker-compose.yml build --parallel
 	@echo "$(GREEN)✅ Docker images built!$(NC)"
 
 docker-build-shell: ## Build only Shell Docker image
 	@echo "$(CYAN)🐳 Building Shell Docker image...$(NC)"
-	cd docker && docker-compose build shell
+	DOCKER_BUILDKIT=1 docker-compose -f docker/docker-compose.yml build shell
 
 docker-build-app1: ## Build only App1 Docker image
 	@echo "$(CYAN)🐳 Building App1 Docker image...$(NC)"
-	cd docker && docker-compose build app1
+	DOCKER_BUILDKIT=1 docker-compose -f docker/docker-compose.yml build app1
 
 docker-build-app2: ## Build only App2 Docker image
 	@echo "$(CYAN)🐳 Building App2 Docker image...$(NC)"
-	cd docker && docker-compose build app2
+	DOCKER_BUILDKIT=1 docker-compose -f docker/docker-compose.yml build app2
 
 docker-build-nocache: ## Build Docker images without cache
 	@echo "$(CYAN)🐳 Building Docker images (no cache)...$(NC)"
-	cd docker && docker-compose build --no-cache
+	DOCKER_BUILDKIT=1 docker-compose -f docker/docker-compose.yml build --no-cache --parallel
 
 # =============================================================================
 # DOCKER - RUN
@@ -375,11 +376,11 @@ docker-up: ## Start Docker containers
 	@echo "  App1:   http://localhost:8085"
 	@echo "  App2:   http://localhost:8086"
 	@echo ""
-	cd docker && docker-compose up
+	docker-compose -f docker/docker-compose.yml up
 
 docker-up-d: ## Start Docker containers (detached mode)
 	@echo "$(CYAN)🐳 Starting Docker containers (detached)...$(NC)"
-	cd docker && docker-compose up -d
+	docker-compose -f docker/docker-compose.yml up -d
 	@echo ""
 	@echo "$(GREEN)✅ Containers started!$(NC)"
 	@echo "$(YELLOW)Access URLs:$(NC)"
@@ -389,24 +390,24 @@ docker-up-d: ## Start Docker containers (detached mode)
 
 docker-down: ## Stop Docker containers
 	@echo "$(CYAN)🐳 Stopping Docker containers...$(NC)"
-	cd docker && docker-compose down
+	docker-compose -f docker/docker-compose.yml down
 	@echo "$(GREEN)✅ Containers stopped!$(NC)"
 
 docker-restart: ## Restart Docker containers
 	@echo "$(CYAN)🐳 Restarting Docker containers...$(NC)"
-	cd docker && docker-compose restart
+	docker-compose -f docker/docker-compose.yml restart
 
 docker-logs: ## View Docker container logs
-	cd docker && docker-compose logs -f
+	docker-compose -f docker/docker-compose.yml logs -f
 
 docker-logs-shell: ## View Shell container logs
-	cd docker && docker-compose logs -f shell
+	docker-compose -f docker/docker-compose.yml logs -f shell
 
 docker-logs-app1: ## View App1 container logs
-	cd docker && docker-compose logs -f app1
+	docker-compose -f docker/docker-compose.yml logs -f app1
 
 docker-logs-app2: ## View App2 container logs
-	cd docker && docker-compose logs -f app2
+	docker-compose -f docker/docker-compose.yml logs -f app2
 
 # =============================================================================
 # DOCKER - MANAGEMENT
@@ -417,7 +418,7 @@ docker-ps: ## List running Docker containers
 
 docker-clean: ## Stop and remove containers, networks, and images
 	@echo "$(RED)🗑️  Cleaning up Docker resources...$(NC)"
-	cd docker && docker-compose down --rmi all --volumes --remove-orphans
+	docker-compose -f docker/docker-compose.yml down --rmi all --volumes --remove-orphans
 	@echo "$(GREEN)✅ Docker cleanup complete!$(NC)"
 
 docker-rebuild: docker-clean docker-build docker-up ## Clean, rebuild, and start containers

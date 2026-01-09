@@ -1,11 +1,6 @@
+# syntax=docker/dockerfile:1.4
 # =============================================================================
-# Shell BFF Server - Multi-stage Dockerfile
-# =============================================================================
-# This Dockerfile handles the complete build process:
-# 1. Build React frontend app
-# 2. Build Node.js BFF server
-# 3. Copy frontend bundle to server's public folder
-# 4. Create optimized production image
+# Shell BFF Server - Multi-stage Dockerfile (Optimized)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -15,28 +10,38 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copy package files for root (for shared libs dependencies)
+# Build arguments for Module Federation remote URLs
+ARG VITE_APP1_REMOTE_URL=http://localhost:8085/assets/remoteEntry.js
+ARG VITE_APP2_REMOTE_URL=http://localhost:8086/assets/remoteEntry.js
+
+# Set as environment variables for the build
+ENV VITE_APP1_REMOTE_URL=$VITE_APP1_REMOTE_URL
+ENV VITE_APP2_REMOTE_URL=$VITE_APP2_REMOTE_URL
+
+# Copy package files FIRST for better caching
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
 
-# Copy shared libraries (needed for frontend build)
-COPY libs/ ./libs/
+# Install dependencies with unique cache ID to avoid conflicts
+RUN --mount=type=cache,id=shell-frontend-npm,target=/root/.npm \
+  npm ci
 
-# Copy shell frontend app
+# Copy libs and app source
+COPY libs/ ./libs/
 COPY apps/shell/src ./apps/shell/src
 COPY apps/shell/index.html ./apps/shell/
 COPY apps/shell/vite.config.ts ./apps/shell/
 COPY apps/shell/project.json ./apps/shell/
 COPY apps/shell/tsconfig*.json ./apps/shell/
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
 
-# Install dependencies
-RUN npm ci
-
-# Build the frontend app
-RUN npx nx build shell --skip-nx-cache
-
-# Frontend build output is now in /app/dist/apps/shell
+# Build the frontend app with the correct remote URLs
+RUN echo "Building shell with:" && \
+  echo "  App1 Remote: $VITE_APP1_REMOTE_URL" && \
+  echo "  App2 Remote: $VITE_APP2_REMOTE_URL" && \
+  npx nx build shell --skip-nx-cache
 
 # -----------------------------------------------------------------------------
 # Stage 2: Backend Build (Node.js + Express)
@@ -48,8 +53,9 @@ WORKDIR /app
 # Copy server package files
 COPY apps/shell/server/package*.json ./
 
-# Install all dependencies (including dev for build)
-RUN npm ci
+# Install dependencies with unique cache ID
+RUN --mount=type=cache,id=shell-backend-npm,target=/root/.npm \
+  npm ci
 
 # Copy server source code
 COPY apps/shell/server/src ./src
@@ -57,8 +63,6 @@ COPY apps/shell/server/tsconfig.json ./
 
 # Build TypeScript server
 RUN npm run build
-
-# Server build output is now in /app/dist
 
 # -----------------------------------------------------------------------------
 # Stage 3: Production Image
@@ -69,13 +73,14 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 # Copy server package files
 COPY apps/shell/server/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Install production dependencies with unique cache ID
+RUN --mount=type=cache,id=shell-prod-npm,target=/root/.npm \
+  npm ci --omit=dev
 
 # Copy built server from backend-builder
 COPY --from=backend-builder /app/dist ./dist

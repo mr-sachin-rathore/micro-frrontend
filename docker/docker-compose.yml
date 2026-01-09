@@ -22,6 +22,11 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.shell
+      args:
+        # These URLs are used at BUILD TIME for Module Federation
+        # They must be accessible from the browser, not Docker network
+        VITE_APP1_REMOTE_URL: http://localhost:8085/assets/remoteEntry.js
+        VITE_APP2_REMOTE_URL: http://localhost:8086/assets/remoteEntry.js
     container_name: mf-shell-bff
     ports:
       - "8084:8084"

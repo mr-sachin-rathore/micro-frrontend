@@ -3,51 +3,47 @@
  *
  * Provides base URLs for API calls based on environment.
  *
- * DEVELOPMENT / LOCAL PREVIEW:
- * - Frontend runs on Vite dev/preview server (5173, 5174, 5175)
+ * DEVELOPMENT / LOCAL PREVIEW (ports 5173-5175):
+ * - Frontend runs on Vite dev/preview server
  * - BFF servers run separately (8084, 8085, 8086)
- * - API calls go to different ports
+ * - API calls go to explicit BFF URLs
  *
- * PRODUCTION (Docker):
- * - Frontend is served by BFF server
- * - API calls go to same origin (relative URLs)
+ * DOCKER (ports 8084-8086):
+ * - All apps loaded via Module Federation into shell at 8084
+ * - But API calls still need to go to correct BFF servers
+ * - App1 APIs → 8085, App2 APIs → 8086
+ *
+ * PRODUCTION (deployed):
+ * - Reverse proxy routes to correct backends
+ * - Use relative URLs
  */
 
-// API base URLs for each environment
+// API base URLs - explicit URLs for localhost, relative for deployed production
 export const API_CONFIG = {
-  local: {
+  // Used when running on localhost (dev, preview, or Docker)
+  localhost: {
     shell: "http://localhost:8084",
     app1: "http://localhost:8085",
     app2: "http://localhost:8086",
   },
+  // Used when deployed to production domain
   production: {
     shell: "", // Same origin - relative URLs
-    app1: "", // Same origin
-    app2: "", // Same origin
+    app1: "", // Assumes reverse proxy routes /api/dashboard/* to app1
+    app2: "", // Assumes reverse proxy routes /api/settings/* to app2
   },
 };
 
 /**
- * Detect if we're running locally (dev mode or preview mode on localhost)
+ * Detect if we're running on localhost (dev, preview, or Docker)
  */
-function isLocalEnvironment(): boolean {
-  // Check if we're in the browser
+function isLocalhost(): boolean {
   if (typeof window === "undefined") {
     return true; // SSR or Node - assume local
   }
 
   const hostname = window.location.hostname;
-  const port = window.location.port;
-
-  // Running on localhost with Vite dev/preview ports
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    const vitePorts = ["5173", "5174", "5175"];
-    if (vitePorts.includes(port)) {
-      return true;
-    }
-  }
-
-  return false;
+  return hostname === "localhost" || hostname === "127.0.0.1";
 }
 
 /**
@@ -57,7 +53,9 @@ function isLocalEnvironment(): boolean {
  * @returns The base URL string
  */
 export function getApiBaseUrl(app: "shell" | "app1" | "app2"): string {
-  const config = isLocalEnvironment() ? API_CONFIG.local : API_CONFIG.production;
+  // On localhost (dev, preview, or Docker), always use explicit URLs
+  // because APIs are served from different ports
+  const config = isLocalhost() ? API_CONFIG.localhost : API_CONFIG.production;
 
   return config[app];
 }
@@ -66,12 +64,12 @@ export function getApiBaseUrl(app: "shell" | "app1" | "app2"): string {
  * Get all API base URLs
  */
 export function getAllApiUrls() {
-  return isLocalEnvironment() ? API_CONFIG.local : API_CONFIG.production;
+  return isLocalhost() ? API_CONFIG.localhost : API_CONFIG.production;
 }
 
 /**
- * Check if running in local/development mode
+ * Check if running on localhost
  */
 export function isDevMode(): boolean {
-  return isLocalEnvironment();
+  return isLocalhost();
 }
